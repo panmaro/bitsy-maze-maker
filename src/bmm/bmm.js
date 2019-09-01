@@ -34,7 +34,7 @@ function process(canvas, options = {}) {
     const hr = Math.ceil(canvas.width / roomWidth);
     const vr = Math.ceil(canvas.height / roomHeight);
 
-    const parsedPixelMaps = parsePixelMap(pixelMaps);
+    const { parsedPixelMaps, parsedWalls } = parsePixelMap(pixelMaps);
 
     // left right top bottom border of the room
     const lbr = Math.floor((16 - roomWidth) / 2);
@@ -150,15 +150,21 @@ function process(canvas, options = {}) {
 
 function parsePixelMap(pixelMaps) {
     let result = {};
+    let resultWalls = new Set();
     pixelMaps.split(/\r|\n/g).
         filter(i => i.trim().length > 0).
         map(i => i.trim().split(' ')).
         map(j => {
             if (!j[0].includes('#')) j[0] = '#' + j[0];
-            if (j[1].includes(',')) j[1] = j[1].split(',')
+            if (j[1].includes(',')) j[1] = j[1].split(',');
             return j;
-        }).forEach(i => result[i[0]] = i[1]);
-    return result;
+        }).forEach(i => {
+            result[i[0]] = i[1]; // {#color => [a,b,c], ...}
+            if (i[2].includes('/w')) {
+                resultWalls.add(i[0]);
+            }
+        }); 
+    return { parsedPixelMaps: result, parsedWalls: resultWalls };
 }
 
 function pixelMapping(color, parsedPixelMaps) {
