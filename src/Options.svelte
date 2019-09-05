@@ -5,8 +5,8 @@
         roomHeight: 16,
         horizontalLoop: true,
         verticalLoop: true,
-        pixelMaps: ["#000000 1", '#ffffff 0', '#ff0000 2,3,4'].join('\r\n')
-
+        pixelMaps: ["#000000 1", '#ffffff 0', '#ff0000 2,3,4'].join('\r\n'),
+        roomIndexOffset: 0,
     }
 
 </script>
@@ -29,6 +29,9 @@
 
 <label for="verticalLoop">Vertical Loop</label>
 <input type="checkbox" id="verticalLoop" text="Vertical Loop" bind:checked={options.verticalLoop}>
+
+<label for="roomIndexOffset">Room index offset</label>
+<input type="number" id="roomIndexOffset" text="Room index offset" bind:value={options.roomIndexOffset}>
 
 <label for="pixelMaps">Color mapping</label>
 <textarea id="pixelMaps" bind:value={options.pixelMaps}></textarea>

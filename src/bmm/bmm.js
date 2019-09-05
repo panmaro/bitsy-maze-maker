@@ -11,7 +11,6 @@ let Pixels = require('./utils/pixels');
  */
 function process(canvas, options = {}) {
 
-    
     const {
         roomWidth = 16,
         roomHeight = 16,
@@ -72,8 +71,6 @@ function process(canvas, options = {}) {
         }
     }
     
-    console.log(colors, exitColors);
-
     // exits
     for (let color in exitColors) {
 
@@ -81,34 +78,31 @@ function process(canvas, options = {}) {
         
         if (exits.length < 2) continue;
 
-        console.log('e',exits, xyname(exits[0].ihr, exits[0].ivr), rooms[xyname(exits[1].ihr, exits[1].ivr)]);
-
         // connecting two exits together
         connectExits(
             rooms[xyname(exits[0].ihr, exits[0].ivr)], exits[0].x, exits[0].y,
             rooms[xyname(exits[1].ihr, exits[1].ivr)], exits[1].x, exits[1].y
         );
-            
-        //rooms[xyname(exits[0].ihr, exits[0].ivr)].exit(exits[0].x, exits[0].y, xyid(exits[1].ihr, exits[1].ivr), exits[1].x, exits[1].y);
-        //rooms[xyname(exits[1].ihr, exits[1].ivr)].exit(exits[1].x, exits[1].y, xyid(exits[0].ihr, exits[0].ivr), exits[0].x, exits[0].y);
     }
 
     // running between rooms - horizontal
-    for (let y = tbr + 1; y < bbr - 1; y++) {        
+    for (let y = tbr + 1; y < bbr ; y++) {
         for (let ivr = 0; ivr < vr; ivr++) {
             for (let ihr = 0; ihr < hr; ihr++) {
-
+                   
                 if (ihr === hr - 1) {
                     if (horizontalLoop) {
                         connectExits(
                             rooms[xyname(ihr, ivr)], rbr, y,
-                            rooms[xyname(0, ivr)], lbr, y
+                            rooms[xyname(0, ivr)], lbr, y,
+                            parsedWalls
                         )
                     }
                 } else {
                     connectExits(
                         rooms[xyname(ihr, ivr)], rbr, y,
-                        rooms[xyname(ihr + 1, ivr)], lbr, y
+                        rooms[xyname(ihr + 1, ivr)], lbr, y,
+                        parsedWalls
                     )
                 }   
                 
@@ -117,7 +111,7 @@ function process(canvas, options = {}) {
     }
         
     // running between rooms - vertical
-    for (let x = lbr + 1; x < rbr - 1; x++) {        
+    for (let x = lbr + 1; x < rbr; x++) {        
         for (let ivr = 0; ivr < vr; ivr++) {
             for (let ihr = 0; ihr < hr; ihr++) {
 
@@ -125,13 +119,15 @@ function process(canvas, options = {}) {
                     if (verticalLoop) {
                         connectExits(
                             rooms[xyname(ihr, ivr)], x, bbr,
-                            rooms[xyname(ihr, 0)], x, tbr
+                            rooms[xyname(ihr, 0)], x, tbr,
+                            parsedWalls
                         )
                     }
                 } else {
                     connectExits(
                         rooms[xyname(ihr, ivr)], x, bbr,
-                        rooms[xyname(ihr, ivr + 1)], x, tbr
+                        rooms[xyname(ihr, ivr + 1)], x, tbr,
+                        parsedWalls
                     )
                 }   
                 
@@ -156,12 +152,12 @@ function parsePixelMap(pixelMaps) {
         map(i => i.trim().split(' ')).
         map(j => {
             if (!j[0].includes('#')) j[0] = '#' + j[0];
-            if (j[1].includes(',')) j[1] = j[1].split(',');
+            if (j[1].includes(',')) j[1] = j[1].split(','); else j[1] = [j[1]];
             return j;
         }).forEach(i => {
             result[i[0]] = i[1]; // {#color => [a,b,c], ...}
-            if (i[2].includes('/w')) {
-                resultWalls.add(i[0]);
+            if (i[2] && i[2].includes('/w')) { // wall
+                i[1].forEach(val => resultWalls.add(val)); 
             }
         }); 
     return { parsedPixelMaps: result, parsedWalls: resultWalls };
@@ -169,21 +165,20 @@ function parsePixelMap(pixelMaps) {
 
 function pixelMapping(color, parsedPixelMaps) {
     if (typeof parsedPixelMaps[color] === 'undefined') return '0';
-    else if (typeof parsedPixelMaps[color] === 'string') return parsedPixelMaps[color];
+    //else if (typeof parsedPixelMaps[color] === 'string') return parsedPixelMaps[color];
     else return parsedPixelMaps[color][Math.floor(Math.random() * parsedPixelMaps[color].length)];
 }
 
-function connectExits(room1, x1, y1, room2, x2, y2) {
+function connectExits(room1, x1, y1, room2, x2, y2, parsedWalls) {
 
     if (!room1 || !room2) debugger;
     console.log('ce', room1.cell(x1, y1), room2.cell(x2, y2), room1.exit(x1, y1), room2.exit(x2, y2));
     
-    if (room1.cell(x1, y1) !== '0' || room2.cell(x2, y2) !== '0') return;
+    if (parsedWalls && (parsedWalls.has(room1.cell(x1, y1)) || parsedWalls.has(room1.cell(x2, y2)))) return;
+
     if (room1.exit(x1, y1) || room2.exit(x2, y2)) return;
     room1.exit(x1, y1, room2.id, x2, y2);
     room2.exit(x2, y2, room1.id, x1, y1);    
 }
-
-function test() { console.log('ok') }
 
 exports.process = process;
